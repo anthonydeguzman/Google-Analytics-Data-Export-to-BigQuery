@@ -232,12 +232,12 @@ def get_report_requests(VIEW_ID, START_DATE, END_DATE):
                 ],
                 'dimensions': [
                     {'name': 'ga:year'},
-                    # {'name': 'ga:userType'},
-                    # {'name': 'ga:channelGrouping'},
-                    # {'name': 'ga:sourceMedium'},
-                    # {'name': 'ga:fullReferrer'},
-                    # {'name': 'ga:source'},
-                    # {'name': 'ga:medium'}
+                    {'name': 'ga:userType'},
+                    {'name': 'ga:channelGrouping'},
+                    {'name': 'ga:sourceMedium'},
+                    {'name': 'ga:fullReferrer'},
+                    {'name': 'ga:source'},
+                    {'name': 'ga:medium'}
                 ],
             },
         },

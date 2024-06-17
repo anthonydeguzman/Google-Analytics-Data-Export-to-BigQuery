@@ -52,7 +52,9 @@ def get_report(analytics, report_request):
     page_token = None
 
     while True:
+        #  Avoid quotas
         time.sleep(1)
+
         # Add the page token to the report request
         report_request['pageToken'] = page_token
 
