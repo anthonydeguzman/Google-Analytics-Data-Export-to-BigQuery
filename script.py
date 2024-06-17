@@ -1,5 +1,6 @@
 import os
 import csv
+import time
 from dotenv import load_dotenv
 from google.cloud import bigquery
 from google.oauth2 import service_account
@@ -14,8 +15,8 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'temp.json'
 
 # Set up your GA view ID
 VIEW_ID = os.getenv('VIEW_ID')
-START_DATE = os.getenv('START_DATE')
-END_DATE = os.getenv('END_DATE')
+START_DATE = '2017-01-01'
+END_DATE = '2024-06-17'
 
 def initialize_analyticsreporting():
     credentials = service_account.Credentials.from_service_account_file(
@@ -51,6 +52,7 @@ def get_report(analytics, report_request):
     page_token = None
 
     while True:
+        time.sleep(1)
         # Add the page token to the report request
         report_request['pageToken'] = page_token
 
