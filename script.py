@@ -15,8 +15,13 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'temp.json'
 
 # Set up your GA view ID
 VIEW_ID = os.getenv('VIEW_ID')
-START_DATE = '2017-01-01'
-END_DATE = '2024-06-17'
+
+YEAR = '2023'
+
+START_DATE = f"{YEAR}-01-01"
+END_DATE = f"{YEAR}-12-31"
+
+newpath = f"./output/{YEAR}"
 
 def initialize_analyticsreporting():
     credentials = service_account.Credentials.from_service_account_file(
@@ -25,35 +30,13 @@ def initialize_analyticsreporting():
     )
     return build('analyticsreporting', 'v4', credentials=credentials)
 
-def create_table(project_id, dataset_id, table_id, schema):
-    client = bigquery.Client(project=project_id)
-
-    table_ref = client.dataset(dataset_id).table(table_id)
-    table = bigquery.Table(table_ref, schema=schema)
-    table = client.create_table(table)
-    print(f"Created table {table.project}.{table.dataset_id}.{table.table_id}")
-
-def insert_rows(project_id, dataset_id, table_id, rows_to_insert):
-    client = bigquery.Client(project=project_id)
-
-    table_ref = client.dataset(dataset_id).table(table_id)
-    table = client.get_table(table_ref)
-
-    errors = []
-    for i in range(0, len(rows_to_insert), 1000):
-        batch_rows = rows_to_insert[i:i+1000]
-        errors.extend(client.insert_rows_json(table, batch_rows))
-
-    if errors:
-        print("Encountered errors while inserting rows: {}".format(errors))
-
 def get_report(analytics, report_request):
     report_responses = []
     page_token = None
 
     while True:
         #  Avoid quotas
-        time.sleep(1)
+        time.sleep(2)
 
         # Add the page token to the report request
         report_request['pageToken'] = page_token
@@ -69,6 +52,7 @@ def get_report(analytics, report_request):
         # Check if there are more pages available
         next_page_token = response['reports'][0].get('nextPageToken')
         if next_page_token:
+            print("- Paginating")
             page_token = next_page_token
         else:
             break
@@ -76,6 +60,9 @@ def get_report(analytics, report_request):
     return report_responses
 
 def main():
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+
     analytics = initialize_analyticsreporting()
     report_requests = get_report_requests(VIEW_ID, START_DATE, END_DATE)
 
@@ -83,6 +70,13 @@ def main():
         table_id = request['table_id']
         report_request = request['report_request']
 
+        file_output = f"output/{YEAR}/{table_id}.csv"
+
+        # Skip if there's already a file i.e. don't overwrite
+        if os.path.exists(file_output):
+            continue
+
+        print(table_id)
         report = get_report(analytics, report_request)
 
         # Extract schema from report
@@ -91,12 +85,8 @@ def main():
         schema = [dim['name'].replace('ga:', '') for dim in dimensions]
         schema += [metric['expression'].replace('ga:', '') for metric in metrics]
 
-        print(f"Created table {table_id}")
-        with open(f"output/{table_id}.csv", 'w', newline='') as csvfile:
-            fieldnames = schema
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-            writer.writeheader()
+        with open(file_output, 'w', newline='') as csvfile:
             rows = []
             for response in report:
                 if 'rows' in response['reports'][0]['data']:
@@ -110,38 +100,16 @@ def main():
                     record[metric['expression'].replace('ga:', '')] = row['metrics'][0]['values'][i]
                 rows_to_insert.append(record)
 
+            if not rows_to_insert:
+                print('- No data')
+                os.remove(file_output)
+                continue
+
+            fieldnames = schema
+            print('- Creating CSV')
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
             writer.writerows(rows_to_insert)
 
-        # project_id = 'INSERT PROJECT ID'
-        # dataset_id = 'INSERT DATASET ID'
-
-        # Create a new table with a counter if the row limit exceeds 1000
-        # table_counter = 1
-        # while True:
-        #     new_table_id = f"{table_id}_{table_counter}"
-        #     try:
-        #         bigquery.Client(project=project_id).get_table(f"{project_id}.{dataset_id}.{new_table_id}")
-        #     except NotFound:
-        #         create_table(project_id, dataset_id, new_table_id, schema)
-        #         break
-        #     table_counter += 1
-
-        # Extract data from report
-        # rows = []
-        # for response in report:
-        #     if 'rows' in response['reports'][0]['data']:
-        #         rows += response['reports'][0]['data']['rows']
-        # rows_to_insert = []
-        # for row in rows:
-        #     record = {}
-        #     for i, dim in enumerate(dimensions):
-        #         record[dim['name'].replace('ga:', '')] = row['dimensions'][i]
-        #     for i, metric in enumerate(metrics):
-        #         record[metric['expression'].replace('ga:', '')] = row['metrics'][0]['values'][i]
-        #     rows_to_insert.append(record)
-
-        # Insert rows into the corresponding table
-        # To-do: comment out for csv export
-        # insert_rows(project_id, dataset_id, new_table_id, rows_to_insert)
 if __name__ == '__main__':
     main()
