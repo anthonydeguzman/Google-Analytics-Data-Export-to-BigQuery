@@ -54,9 +54,7 @@ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-
 2. Replace the placeholder values in the script with your actual values:
 3. Replace 'temp.json' with the path to your service account key file.
 4. Add VIEW_ID in .env
-5. Add start date and end date in .env
-5. Replace 'INSERT PROJECT ID' with your Google Cloud project ID.
-6. Replace 'INSERT DATASET ID' with your BigQuery dataset ID.
+5. Update 'YEAR' in script.y
 7. Edit the report_requests list to include the Google Analytics reports you want to export, specifying the metrics and dimensions for each report.
 
 ## Running the Script
