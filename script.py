@@ -16,7 +16,7 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'temp.json'
 # Set up your GA view ID
 VIEW_ID = os.getenv('VIEW_ID')
 
-YEAR = '2023'
+YEAR = '2021'
 
 START_DATE = f"{YEAR}-01-01"
 END_DATE = f"{YEAR}-12-31"
@@ -84,7 +84,6 @@ def main():
         metrics = report_request['metrics']
         schema = [dim['name'].replace('ga:', '') for dim in dimensions]
         schema += [metric['expression'].replace('ga:', '') for metric in metrics]
-
 
         with open(file_output, 'w', newline='') as csvfile:
             rows = []
